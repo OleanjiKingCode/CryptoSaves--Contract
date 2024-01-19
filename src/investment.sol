@@ -1,76 +1,115 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.13;
 
-import "lib/";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {Counters} from "../lib/openzeppelin-contracts/contracts/utils/Counters.sol";
 
 /// @title LOCK YEAR CONTRACT
 /// @author Oleanji
 /// @notice A contracts that locks funds for a year
 
 contract EtherLockup is Ownable(msg.sender) {
-    using SafeMath for uint256;
+    using Counters for Counters.Counter;
 
+    Counters.Counter private lockIdTracker;
     struct Lockup {
+        uint256 lockId;
         uint256 amount;
         uint256 releaseTime;
         bool locked;
     }
 
-    mapping(address => Lockup) public lockups;
+    mapping(uint256 => Lockup) public lockups;
 
-    event EtherLocked(address indexed owner, uint256 amount, uint256 releaseTime);
-    event EtherUnlocked(address indexed owner, uint256 amount);
-    event LockupExtended(address indexed owner, uint256 releaseTime);
+    constructor() {
+        lockIdTracker.increment();
+    }
+
+    event EtherLocked(
+        uint256 indexed id,
+        address owner,
+        uint256 amount,
+        uint256 releaseTime
+    );
+    event EtherUnlocked(uint256 indexed id,address owner, uint256 amount);
+    event LockupExtended(uint256 indexed id,address owner, uint256 releaseTime);
 
     modifier onlyOwnerOrUnlocked() {
-        require(msg.sender == owner() || !lockups[msg.sender].locked, "Not the owner or Ether is locked");
+        require(
+            msg.sender == owner(),
+            "Not the owner "
+        );
         _;
     }
 
-    modifier onlyUnlocked() {
-        require(!lockups[msg.sender].locked, "Ether is locked");
-        _;
-    }
+    // modifier onlyUnlocked() {
+    //     require(!lockups[msg.sender].locked, "Ether is locked");
+    //     _;
+    // }
 
-    function lockEther(uint256 _releaseTime) external payable onlyOwnerOrUnlocked {
+    function lockEther(uint256 _months) external payable onlyOwnerOrUnlocked {
         require(msg.value > 0, "Amount must be greater than 0");
-        require(_releaseTime > block.timestamp, "Release time must be in the future");
+        uint256 releaseTime = block.timestamp + (_months * 30 days);
+        uint256 lockId = lockIdTracker.current();
 
-        lockups[msg.sender] = Lockup({
-            amount: msg.value,
-            releaseTime: _releaseTime,
-            locked: true
-        });
-
-        emit EtherLocked(msg.sender, msg.value, _releaseTime);
+        lockups[lockId] = Lockup(
+            lockId,
+            msg.value,
+            releaseTime,
+            true
+        );
+ lockIdTracker.increment();
+        emit EtherLocked(lockId,msg.sender, msg.value, releaseTime);
     }
 
-    function unlockEther() external onlyOwnerOrUnlocked {
-        require(lockups[msg.sender].locked, "Ether is not locked");
-        require(block.timestamp >= lockups[msg.sender].releaseTime, "Release time has not arrived");
+    function unlockEther(uint256 _lockId) external onlyOwnerOrUnlocked {
+        require(lockups[_lockId].locked, "Ether is not locked");
+        require(
+            block.timestamp >= lockups[_lockId].releaseTime,
+            "Release time has not arrived"
+        );
 
-        uint256 amountToTransfer = lockups[msg.sender].amount;
-        lockups[msg.sender].amount = 0;
-        lockups[msg.sender].locked = false;
+        uint256 amountToTransfer = lockups[_lockId].amount;
+        lockups[_lockId].amount = 0;
+        lockups[_lockId].locked = false;
 
         payable(msg.sender).transfer(amountToTransfer);
 
-        emit EtherUnlocked(msg.sender, amountToTransfer);
+        emit EtherUnlocked(_lockId,msg.sender, amountToTransfer);
     }
 
-    function extendLockup(uint256 _additionalMonths) external onlyOwnerOrUnlocked {
-        require(_additionalMonths > 0, "Additional months must be greater than 0");
-        require(lockups[msg.sender].locked, "Ether is not locked");
+    function extendLockup(
+        uint256 _additionalMonths,
+        uint256 _lockId
+    ) external onlyOwnerOrUnlocked {
+        require(
+            _additionalMonths > 0,
+            "Additional months must be greater than 0"
+        );
+        require(lockups[_lockId].locked, "Ether is not locked");
 
-        uint256 newReleaseTime = lockups[msg.sender].releaseTime.add(_additionalMonths.mul(30 days));
-        lockups[msg.sender].releaseTime = newReleaseTime;
+        uint256 newReleaseTime = lockups[_lockId].releaseTime +
+            (_additionalMonths * 30 days);
+        lockups[_lockId].releaseTime = newReleaseTime;
 
-        emit LockupExtended(msg.sender, newReleaseTime);
+        emit LockupExtended(_lockId,msg.sender, newReleaseTime);
     }
 
-    function getLockupDetails(address _user) external view returns (uint256, uint256, bool) {
-        return (lockups[_user].amount, lockups[_user].releaseTime, lockups[_user].locked);
+    /// @notice Gets all the Lockups created
+    function getAllLockUps() external view returns (Lockup[] memory) {
+        uint256 total = lockIdTracker.current();
+        Lockup[] memory lockup = new Lockup[](total);
+        for (uint256 i = 1; i < total; i++) {
+            lockup[i] = lockup[i];
+        }
+        return lockup;
+    }
+
+    function getLockupDetails(
+        uint256 _lockId
+    ) external view returns (Lockup memory) {
+        Lockup memory lockDetails = lockups[_lockId];
+        return (lockDetails);
     }
 
     receive() external payable {
