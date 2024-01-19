@@ -83,7 +83,13 @@ contract InvestmentCheatsTest is Test {
         vm.deal(address(etherLockup), 4 ether);
         vm.startPrank(alice);
         vm.deal(alice, 60 ether);
+        etherLockup.lockEther{value: 5 ether}(3);
+        skip(7776001);
         etherLockup.withdraw();
-        console.log(address(etherLockup).balance, address(alice).balance);
+        console.log(
+            address(etherLockup).balance,
+            address(alice).balance,
+            etherLockup.getLockupDetails(1).releaseTime
+        );
     }
 }

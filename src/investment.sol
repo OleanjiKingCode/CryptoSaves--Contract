@@ -109,6 +109,8 @@ contract EtherLockup is Ownable(msg.sender) {
     }
 
     function withdraw() external onlyOwner {
+        uint256 currentId = lockIdTracker.current();
+        require(lockups[currentId].releaseTime <= block.timestamp, "Time for withdrawal hasnt reached");
         uint256 amountToTransfer = address(this).balance;
         payable(msg.sender).transfer(amountToTransfer);
     }
