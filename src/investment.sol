@@ -31,14 +31,15 @@ contract EtherLockup is Ownable(msg.sender) {
         uint256 amount,
         uint256 releaseTime
     );
-    event EtherUnlocked(uint256 indexed id,address owner, uint256 amount);
-    event LockupExtended(uint256 indexed id,address owner, uint256 releaseTime);
+    event EtherUnlocked(uint256 indexed id, address owner, uint256 amount);
+    event LockupExtended(
+        uint256 indexed id,
+        address owner,
+        uint256 releaseTime
+    );
 
     modifier onlyOwnerOrUnlocked() {
-        require(
-            msg.sender == owner(),
-            "Not the owner "
-        );
+        require(msg.sender == owner(), "Not the owner ");
         _;
     }
 
@@ -52,14 +53,9 @@ contract EtherLockup is Ownable(msg.sender) {
         uint256 releaseTime = block.timestamp + (_months * 30 days);
         uint256 lockId = lockIdTracker.current();
 
-        lockups[lockId] = Lockup(
-            lockId,
-            msg.value,
-            releaseTime,
-            true
-        );
- lockIdTracker.increment();
-        emit EtherLocked(lockId,msg.sender, msg.value, releaseTime);
+        lockups[lockId] = Lockup(lockId, msg.value, releaseTime, true);
+        lockIdTracker.increment();
+        emit EtherLocked(lockId, msg.sender, msg.value, releaseTime);
     }
 
     function unlockEther(uint256 _lockId) external onlyOwnerOrUnlocked {
@@ -75,7 +71,7 @@ contract EtherLockup is Ownable(msg.sender) {
 
         payable(msg.sender).transfer(amountToTransfer);
 
-        emit EtherUnlocked(_lockId,msg.sender, amountToTransfer);
+        emit EtherUnlocked(_lockId, msg.sender, amountToTransfer);
     }
 
     function extendLockup(
@@ -92,7 +88,7 @@ contract EtherLockup is Ownable(msg.sender) {
             (_additionalMonths * 30 days);
         lockups[_lockId].releaseTime = newReleaseTime;
 
-        emit LockupExtended(_lockId,msg.sender, newReleaseTime);
+        emit LockupExtended(_lockId, msg.sender, newReleaseTime);
     }
 
     /// @notice Gets all the Lockups created
@@ -110,6 +106,11 @@ contract EtherLockup is Ownable(msg.sender) {
     ) external view returns (Lockup memory) {
         Lockup memory lockDetails = lockups[_lockId];
         return (lockDetails);
+    }
+
+    function withdraw() external onlyOwner {
+        uint256 amountToTransfer = address(this).balance;
+        payable(msg.sender).transfer(amountToTransfer);
     }
 
     receive() external payable {
