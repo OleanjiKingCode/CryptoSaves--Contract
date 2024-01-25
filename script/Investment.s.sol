@@ -5,7 +5,7 @@ import {Script} from "../lib/forge-std/src/Script.sol";
 import {console} from "../lib/forge-std/src/console.sol";
 import {EtherLockup} from "../src/Investment.sol";
 
-contract EtherLockupDeployer is Script {
+contract Investment is Script {
     function run() external {
         vm.startBroadcast();
         console.log("Deploying EtherLockup deployer....");
