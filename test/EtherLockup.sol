@@ -166,6 +166,28 @@ contract EtherLockupCheatsTest is Test {
         vm.stopPrank();
     }
 
+    function testCannotLockZeroEther() public {
+        vm.startPrank(alice);
+        vm.expectRevert(EtherLockup.CannotLockZeroEther.selector);
+        etherLockup.lockEther{value: 0 ether}(3);
+        vm.stopPrank();
+    }
+
+    function testLockupIsntLocked() public {
+        vm.startPrank(alice);
+        vm.deal(alice, 10 ether);
+
+        etherLockup.lockEther{value: 6 ether}(3);
+        assertEq(etherLockup.getLockupDetails(1).locked, true);
+
+        skip(3 * 30 * 24 * 60 * 60 + 1);
+        etherLockup.unlockEther(1);
+
+        vm.expectRevert(EtherLockup.LockupIsntLocked.selector);
+        etherLockup.extendLockup(1, 1);
+        vm.stopPrank();
+    }
+
     // function testlockEther() public {
     //     vm.startPrank(alice);
     //     /// crediting aka dealing 200 ethers to alice account
