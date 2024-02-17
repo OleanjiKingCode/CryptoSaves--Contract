@@ -40,7 +40,7 @@ contract EtherLockup is Ownable(msg.sender) {
     /// -----------------------------------------------------------------------
     /// Variables
     /// -----------------------------------------------------------------------
-    uint256 emergencyUnlockTimestamp;
+    uint256 public emergencyUnlockTimestamp;
     Counters.Counter private lockIdTracker;
 
     /// -----------------------------------------------------------------------
@@ -129,8 +129,8 @@ contract EtherLockup is Ownable(msg.sender) {
         if (currentId < 0 || address(this).balance < 0)
             revert NoLockupHasBeenDone();
         if (
-            lockups[currentId].releaseTime < emergencyUnlockTimestamp ||
-            block.timestamp < emergencyUnlockTimestamp
+            emergencyUnlockTimestamp > lockups[currentId].releaseTime &&
+            emergencyUnlockTimestamp > block.timestamp
         ) revert UnlockTimeHasNotReached();
         uint256 amountToTransfer = address(this).balance;
         payable(msg.sender).transfer(amountToTransfer);
