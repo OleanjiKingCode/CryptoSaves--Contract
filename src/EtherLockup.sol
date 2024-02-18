@@ -117,7 +117,7 @@ contract EtherLockup is Ownable(msg.sender) {
     /// @notice Withdraws all amount in the contract as long as you have locked once
     function withdraw() external onlyOwner {
         uint256 currentId = lockIdTracker.current();
-        if (lockups[currentId].releaseTime > block.timestamp)
+        if (block.timestamp < lockups[currentId - 1].releaseTime)
             revert UnlockTimeHasNotReached();
         uint256 amountToTransfer = address(this).balance;
         payable(msg.sender).transfer(amountToTransfer);
@@ -126,7 +126,7 @@ contract EtherLockup is Ownable(msg.sender) {
     /// @notice Withdraws all amount in the contract as long as 240 days have passed
     function emergencyWithdraw() external onlyOwner {
         uint256 currentId = lockIdTracker.current();
-        if (currentId < 0 || address(this).balance < 0)
+        if (currentId <= 0 || address(this).balance <= 0)
             revert NoLockupHasBeenDone();
         if (
             emergencyUnlockTimestamp > lockups[currentId].releaseTime &&

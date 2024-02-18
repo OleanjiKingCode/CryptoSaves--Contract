@@ -182,9 +182,54 @@ contract EtherLockupCheatsTest is Test {
 
         skip(3 * 30 * 24 * 60 * 60 + 1);
         etherLockup.unlockEther(1);
-
         vm.expectRevert(EtherLockup.LockupIsntLocked.selector);
         etherLockup.extendLockup(1, 1);
+        vm.stopPrank();
+    }
+
+    function testUnlockTimeHasNotReached() public {
+        vm.startPrank(alice);
+        vm.deal(alice, 10 ether);
+
+        etherLockup.lockEther{value: 6 ether}(3);
+
+        vm.expectRevert(EtherLockup.UnlockTimeHasNotReached.selector);
+        etherLockup.unlockEther(1);
+
+        //skip by a month to test if it will go through
+        skip(1 * 30 * 24 * 60 * 60 + 1);
+
+        vm.expectRevert(EtherLockup.UnlockTimeHasNotReached.selector);
+        etherLockup.withdraw();
+        //skip by another month totest if it will go through
+        skip(1 * 30 * 24 * 60 * 60 + 1);
+
+        vm.expectRevert(EtherLockup.UnlockTimeHasNotReached.selector);
+        etherLockup.emergencyWithdraw();
+
+        vm.stopPrank();
+    }
+
+    function testAdditionalMonthsShouldBeMoreThanZero() public {
+        vm.startPrank(alice);
+        vm.deal(alice, 10 ether);
+
+        etherLockup.lockEther{value: 6 ether}(3);
+
+        vm.expectRevert(
+            EtherLockup.AdditionalMonthsShouldBeMoreThanZero.selector
+        );
+        etherLockup.extendLockup(0, 1);
+        vm.stopPrank();
+    }
+
+    function testNoLockupHasBeenDone() public {
+        vm.startPrank(alice);
+        assertEq(address(etherLockup).balance, 0);
+
+        vm.expectRevert(EtherLockup.NoLockupHasBeenDone.selector);
+        etherLockup.emergencyWithdraw();
+
         vm.stopPrank();
     }
 
