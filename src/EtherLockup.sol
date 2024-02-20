@@ -17,14 +17,31 @@ contract EtherLockup is Ownable(msg.sender) {
     error UnlockTimeHasNotReached();
     error AdditionalMonthsShouldBeMoreThanZero();
     error NoLockupHasBeenDone();
+
+    /// -----------------------------------------------------------------------
+    /// Enum
+    /// -----------------------------------------------------------------------
+
+    enum LockType {
+        Family,
+        Pets,
+        Festivals,
+        Fees,
+        Reward,
+        Travel,
+        Others
+    }
+
     /// -----------------------------------------------------------------------
     /// Structs
     /// -----------------------------------------------------------------------
     struct Lockup {
         uint256 lockId;
+        string name;
         uint256 amount;
         uint256 releaseTime;
         bool locked;
+        LockType lockType;
     }
 
     /// -----------------------------------------------------------------------
@@ -57,13 +74,31 @@ contract EtherLockup is Ownable(msg.sender) {
 
     /// @notice locks your ether for a specific amount of month
     /// @param _months the number of months to lock the ether for
-    function lockEther(uint256 _months) external payable onlyOwner {
+    function lockEther(
+        uint256 _months,
+        string memory _name,
+        LockType _lockType
+    ) external payable onlyOwner {
         if (msg.value <= 0) revert CannotLockZeroEther();
         uint256 releaseTime = block.timestamp + (_months * 30 days);
         uint256 lockId = lockIdTracker.current();
-        lockups[lockId] = Lockup(lockId, msg.value, releaseTime, true);
+        lockups[lockId] = Lockup(
+            lockId,
+            _name,
+            msg.value,
+            releaseTime,
+            true,
+            _lockType
+        );
         lockIdTracker.increment();
-        emit EtherLocked(lockId, msg.sender, msg.value, releaseTime);
+        emit EtherLocked(
+            lockId,
+            _name,
+            msg.sender,
+            msg.value,
+            releaseTime,
+            _lockType
+        );
     }
 
     /// @notice unlocks ether when the unlock date has reached
@@ -76,7 +111,12 @@ contract EtherLockup is Ownable(msg.sender) {
         lockups[_lockId].amount = 0;
         lockups[_lockId].locked = false;
         payable(msg.sender).transfer(amountToTransfer);
-        emit EtherUnlocked(_lockId, msg.sender, amountToTransfer);
+        emit EtherUnlocked(
+            _lockId,
+            lockups[_lockId].name,
+            msg.sender,
+            amountToTransfer
+        );
     }
 
     /// @notice extends lock time ether when the unlock date has reached
@@ -92,7 +132,12 @@ contract EtherLockup is Ownable(msg.sender) {
         uint256 newReleaseTime = lockups[_lockId].releaseTime +
             (_additionalMonths * 30 days);
         lockups[_lockId].releaseTime = newReleaseTime;
-        emit LockupExtended(_lockId, msg.sender, newReleaseTime);
+        emit LockupExtended(
+            _lockId,
+            lockups[_lockId].name,
+            msg.sender,
+            newReleaseTime
+        );
     }
 
     /// @notice Gets all the Lockups created
@@ -107,7 +152,7 @@ contract EtherLockup is Ownable(msg.sender) {
 
     /// @notice Gets specific lock up details
     /// @param _lockId the Id of the lockUp you want details for
-    function getLockupDetails(
+    function getLockupDetailsById(
         uint256 _lockId
     ) external view returns (Lockup memory) {
         Lockup memory lockDetails = lockups[_lockId];
@@ -145,13 +190,21 @@ contract EtherLockup is Ownable(msg.sender) {
 
     event EtherLocked(
         uint256 indexed id,
+        string name,
         address owner,
         uint256 amount,
-        uint256 releaseTime
+        uint256 releaseTime,
+        LockType lockType
     );
-    event EtherUnlocked(uint256 indexed id, address owner, uint256 amount);
+    event EtherUnlocked(
+        uint256 indexed id,
+        string name,
+        address owner,
+        uint256 amount
+    );
     event LockupExtended(
         uint256 indexed id,
+        string name,
         address owner,
         uint256 releaseTime
     );
