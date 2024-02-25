@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import {Counters} from "../lib/openzeppelin-contracts/contracts/utils/Counters.sol";
 
 /// @title LOCK YEAR CONTRACT
 /// @author Oleanji
@@ -19,35 +18,16 @@ contract EtherLockup is Ownable(msg.sender) {
     error NoLockupHasBeenDone();
 
     /// -----------------------------------------------------------------------
-    /// Enum
-    /// -----------------------------------------------------------------------
-
-    enum LockType {
-        Family,
-        Pets,
-        Festivals,
-        Fees,
-        Reward,
-        Travel,
-        Others
-    }
-
-    /// -----------------------------------------------------------------------
     /// Structs
     /// -----------------------------------------------------------------------
     struct Lockup {
         uint256 lockId;
         string name;
+        string lockType;
         uint256 amount;
         uint256 releaseTime;
         bool locked;
-        LockType lockType;
     }
-
-    /// -----------------------------------------------------------------------
-    ///  Inheritances
-    /// -----------------------------------------------------------------------
-    using Counters for Counters.Counter;
 
     /// -----------------------------------------------------------------------
     /// Mappings
@@ -58,13 +38,13 @@ contract EtherLockup is Ownable(msg.sender) {
     /// Variables
     /// -----------------------------------------------------------------------
     uint256 public emergencyUnlockTimestamp;
-    Counters.Counter private lockIdTracker;
+    uint private lockIdTracker;
 
     /// -----------------------------------------------------------------------
     /// Constructor
     /// -----------------------------------------------------------------------
     constructor() {
-        lockIdTracker.increment();
+        lockIdTracker += 1;
         emergencyUnlockTimestamp = block.timestamp + (8 * 30 days);
     }
 
@@ -77,20 +57,20 @@ contract EtherLockup is Ownable(msg.sender) {
     function lockEther(
         uint256 _months,
         string memory _name,
-        LockType _lockType
+        string memory _lockType
     ) external payable onlyOwner {
         if (msg.value <= 0) revert CannotLockZeroEther();
         uint256 releaseTime = block.timestamp + (_months * 30 days);
-        uint256 lockId = lockIdTracker.current();
+        uint256 lockId = lockIdTracker;
         lockups[lockId] = Lockup(
             lockId,
             _name,
+            _lockType,
             msg.value,
             releaseTime,
-            true,
-            _lockType
+            true
         );
-        lockIdTracker.increment();
+        lockIdTracker += 1;
         emit EtherLocked(
             lockId,
             _name,
@@ -142,7 +122,7 @@ contract EtherLockup is Ownable(msg.sender) {
 
     /// @notice Gets all the Lockups created
     function getAllLockUps() external view returns (Lockup[] memory) {
-        uint256 total = lockIdTracker.current();
+        uint256 total = lockIdTracker;
         Lockup[] memory lockup = new Lockup[](total);
         for (uint256 i = 1; i < total; i++) {
             lockup[i] = lockups[i];
@@ -161,7 +141,7 @@ contract EtherLockup is Ownable(msg.sender) {
 
     /// @notice Withdraws all amount in the contract as long as you have locked once
     function withdraw() external onlyOwner {
-        uint256 currentId = lockIdTracker.current();
+        uint256 currentId = lockIdTracker;
         if (block.timestamp < lockups[currentId - 1].releaseTime)
             revert UnlockTimeHasNotReached();
         uint256 amountToTransfer = address(this).balance;
@@ -170,7 +150,7 @@ contract EtherLockup is Ownable(msg.sender) {
 
     /// @notice Withdraws all amount in the contract as long as 240 days have passed
     function emergencyWithdraw() external onlyOwner {
-        uint256 currentId = lockIdTracker.current();
+        uint256 currentId = lockIdTracker;
         if (currentId <= 0 || address(this).balance <= 0)
             revert NoLockupHasBeenDone();
         if (
@@ -194,7 +174,7 @@ contract EtherLockup is Ownable(msg.sender) {
         address owner,
         uint256 amount,
         uint256 releaseTime,
-        LockType lockType
+        string lockType
     );
     event EtherUnlocked(
         uint256 indexed id,
