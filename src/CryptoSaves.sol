@@ -3,11 +3,11 @@ pragma solidity ^0.8.13;
 
 import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-/// @title LOCK YEAR CONTRACT
+/// @title Crypto Saving Contract
 /// @author Oleanji
-/// @notice A contracts that locks funds for a year
+/// @notice A contracts that locks funds for a a particular period of time
 
-contract EtherLockup is Ownable(msg.sender) {
+contract CryptoSaves is Ownable(msg.sender) {
     /// -----------------------------------------------------------------------
     /// Errors
     /// -----------------------------------------------------------------------
