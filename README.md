@@ -4,6 +4,21 @@
 
 This Solidity smart contract, named EtherLockup, allows users to lock their Ether for a specified period, and the locked funds can be unlocked or extended by the contract owner. It is designed to facilitate time-based locking of funds.
 
+## Build / Compile Contract
+```
+forge build
+```
+
+## Test Contract
+```
+forge test
+```
+
+## Deploy and Verify Contract
+```
+forge script script/CryptoSaves.s.sol:CryptoSavesScript --rpc-url RPC_URL  --private-key YOUR_PRIVATE_KEY --broadcast --verify --etherscan-api-key YOUR_POLYGONSCAN_API -vvvv --gas-price 60 --legacy
+```
+
 ## Features
 
 - **Lock Ether:** The contract owner can lock a specified amount of Ether for a defined number of months.
