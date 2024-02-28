@@ -18,6 +18,31 @@ contract CryptoSaves is Ownable(msg.sender) {
     error NoLockupHasBeenDone();
 
     /// -----------------------------------------------------------------------
+    /// Events
+    /// -----------------------------------------------------------------------
+
+    event EtherLocked(
+        uint256 indexed id,
+        string name,
+        address owner,
+        uint256 amount,
+        uint256 releaseTime,
+        string lockType
+    );
+    event EtherUnlocked(
+        uint256 indexed id,
+        string name,
+        address owner,
+        uint256 amount
+    );
+    event LockupTimeExtended(
+        uint256 indexed id,
+        string name,
+        address owner,
+        uint256 releaseTime
+    );
+
+    /// -----------------------------------------------------------------------
     /// Structs
     /// -----------------------------------------------------------------------
     struct Lockup {
@@ -38,14 +63,14 @@ contract CryptoSaves is Ownable(msg.sender) {
     /// Variables
     /// -----------------------------------------------------------------------
     uint256 public emergencyUnlockTimestamp;
-    uint private lockIdTracker;
+    uint private lockIdTracker = 0;
 
     /// -----------------------------------------------------------------------
     /// Constructor
     /// -----------------------------------------------------------------------
-    constructor() {
+    constructor(uint256 _months) {
         lockIdTracker += 1;
-        emergencyUnlockTimestamp = block.timestamp + (8 * 30 days);
+        emergencyUnlockTimestamp = block.timestamp + (_months * 30 days);
     }
 
     /// -----------------------------------------------------------------------
@@ -102,7 +127,7 @@ contract CryptoSaves is Ownable(msg.sender) {
     /// @notice extends lock time ether when the unlock date has reached
     /// @param _lockId the Id of the lockUp you want to edit its date
     /// @param _additionalMonths the number of months to increase the lock up for
-    function extendLockup(
+    function extendLockTime(
         uint256 _additionalMonths,
         uint256 _lockId
     ) external onlyOwner {
@@ -112,7 +137,7 @@ contract CryptoSaves is Ownable(msg.sender) {
         uint256 newReleaseTime = lockups[_lockId].releaseTime +
             (_additionalMonths * 30 days);
         lockups[_lockId].releaseTime = newReleaseTime;
-        emit LockupExtended(
+        emit LockupTimeExtended(
             _lockId,
             lockups[_lockId].name,
             msg.sender,
@@ -120,7 +145,31 @@ contract CryptoSaves is Ownable(msg.sender) {
         );
     }
 
-    /// @notice Gets all the Lockups created
+    /// @notice Withdraws all amount in the contract as long as you have locked once
+    function withdrawAllEther() external onlyOwner {
+        uint256 currentId = lockIdTracker;
+        if (currentId == 0 || address(this).balance <= 0)
+            revert NoLockupHasBeenDone();
+        if (block.timestamp < lockups[1].releaseTime)
+            revert UnlockTimeHasNotReached();
+        uint256 amountToTransfer = address(this).balance;
+        payable(msg.sender).transfer(amountToTransfer);
+    }
+
+    /// @notice Withdraws all amount in the contract as long as the emergency lock period has passed
+    function emergencyWithdraw() external onlyOwner {
+        uint256 currentId = lockIdTracker;
+        if (currentId == 0 || address(this).balance <= 0)
+            revert NoLockupHasBeenDone();
+        if (
+            emergencyUnlockTimestamp > lockups[currentId].releaseTime &&
+            emergencyUnlockTimestamp > block.timestamp
+        ) revert UnlockTimeHasNotReached();
+        uint256 amountToTransfer = address(this).balance;
+        payable(msg.sender).transfer(amountToTransfer);
+    }
+
+     /// @notice Gets all the Lockups created
     function getAllLockUps() external view returns (Lockup[] memory) {
         uint256 total = lockIdTracker;
         Lockup[] memory lockup = new Lockup[](total);
@@ -139,53 +188,6 @@ contract CryptoSaves is Ownable(msg.sender) {
         return (lockDetails);
     }
 
-    /// @notice Withdraws all amount in the contract as long as you have locked once
-    function withdraw() external onlyOwner {
-        uint256 currentId = lockIdTracker;
-        if (block.timestamp < lockups[currentId - 1].releaseTime)
-            revert UnlockTimeHasNotReached();
-        uint256 amountToTransfer = address(this).balance;
-        payable(msg.sender).transfer(amountToTransfer);
-    }
-
-    /// @notice Withdraws all amount in the contract as long as 240 days have passed
-    function emergencyWithdraw() external onlyOwner {
-        uint256 currentId = lockIdTracker;
-        if (currentId <= 0 || address(this).balance <= 0)
-            revert NoLockupHasBeenDone();
-        if (
-            emergencyUnlockTimestamp > lockups[currentId].releaseTime &&
-            emergencyUnlockTimestamp > block.timestamp
-        ) revert UnlockTimeHasNotReached();
-        uint256 amountToTransfer = address(this).balance;
-        payable(msg.sender).transfer(amountToTransfer);
-    }
-
     /// @notice Used to receive ether
     receive() external payable {}
-
-    /// -----------------------------------------------------------------------
-    /// Events
-    /// -----------------------------------------------------------------------
-
-    event EtherLocked(
-        uint256 indexed id,
-        string name,
-        address owner,
-        uint256 amount,
-        uint256 releaseTime,
-        string lockType
-    );
-    event EtherUnlocked(
-        uint256 indexed id,
-        string name,
-        address owner,
-        uint256 amount
-    );
-    event LockupExtended(
-        uint256 indexed id,
-        string name,
-        address owner,
-        uint256 releaseTime
-    );
 }

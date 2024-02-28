@@ -97,7 +97,7 @@ This Solidity smart contract, named EtherLockup, allows users to lock their Ethe
 
 ## License
 
-This smart contract is open-source and released under the MIT License. See the [LICENSE](LICENSE) file for details.
+This smart contract is open-source.
 
 ## Author
 

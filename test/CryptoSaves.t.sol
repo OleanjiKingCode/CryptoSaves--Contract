@@ -11,11 +11,11 @@ contract CryptoSavesCheatsTest is Test {
 
     function setUp() public {
         vm.startPrank(alice);
-        cryptoSaves = new CryptoSaves();
+        cryptoSaves = new CryptoSaves(8); //using 8 months as my emergency time
         vm.stopPrank();
     }
 
-    function testlockEther() public {
+    function testLockEther() public {
         vm.startPrank(alice);
 
         /// crediting aka dealing 200 ethers to alice account
@@ -32,7 +32,7 @@ contract CryptoSavesCheatsTest is Test {
         vm.stopPrank();
     }
 
-    function testunlockEther() public {
+    function testUnlockEther() public {
         vm.startPrank(alice);
 
         vm.deal(alice, 60 ether);
@@ -65,7 +65,7 @@ contract CryptoSavesCheatsTest is Test {
         vm.stopPrank();
     }
 
-    function testextendLockup() public {
+    function testExtendLockTime() public {
         vm.startPrank(alice);
 
         vm.deal(alice, 60 ether);
@@ -74,11 +74,11 @@ contract CryptoSavesCheatsTest is Test {
         cryptoSaves.lockEther{value: 5 ether}(3, "LockUpOne", "Fees");
         assertEq(cryptoSaves.getLockupDetailsById(1).amount, 5e18);
 
-        cryptoSaves.extendLockup(3, 1);
+        cryptoSaves.extendLockTime(3, 1);
         assertGt(cryptoSaves.getLockupDetailsById(1).releaseTime, 7776001);
     }
 
-    function testgetAllLockUps() public {
+    function testGetAllLockUps() public {
         vm.startPrank(alice);
         vm.deal(alice, 60 ether);
 
@@ -107,7 +107,7 @@ contract CryptoSavesCheatsTest is Test {
         vm.stopPrank();
     }
 
-    function testgetLockupDetailsById() public {
+    function testGetLockupDetailsById() public {
         vm.startPrank(alice);
         vm.deal(alice, 10 ether);
 
@@ -124,7 +124,7 @@ contract CryptoSavesCheatsTest is Test {
         // the months * days*hrs*min*sec
     }
 
-    function testwithdraw() public {
+    function testWithdrawAllEther() public {
         vm.deal(address(cryptoSaves), 4 ether);
 
         vm.startPrank(alice);
@@ -137,13 +137,13 @@ contract CryptoSavesCheatsTest is Test {
         skip(7776001);
 
         //withdraws all the money in the contract
-        cryptoSaves.withdraw();
+        cryptoSaves.withdrawAllEther();
         assertEq(address(alice).balance, 64e18);
 
         vm.stopPrank();
     }
 
-    function testemergencyWithdraw() public {
+    function testEmergencyWithdraw() public {
         vm.deal(address(cryptoSaves), 48 ether);
         vm.startPrank(alice);
         vm.deal(alice, 10 ether);
@@ -183,7 +183,7 @@ contract CryptoSavesCheatsTest is Test {
         skip(3 * 30 * 24 * 60 * 60 + 1);
         cryptoSaves.unlockEther(1);
         vm.expectRevert(CryptoSaves.LockupIsntLocked.selector);
-        cryptoSaves.extendLockup(1, 1);
+        cryptoSaves.extendLockTime(1, 1);
         vm.stopPrank();
     }
 
@@ -200,7 +200,7 @@ contract CryptoSavesCheatsTest is Test {
         skip(1 * 30 * 24 * 60 * 60 + 1);
 
         vm.expectRevert(CryptoSaves.UnlockTimeHasNotReached.selector);
-        cryptoSaves.withdraw();
+        cryptoSaves.withdrawAllEther();
         //skip by another month totest if it will go through
         skip(1 * 30 * 24 * 60 * 60 + 1);
 
@@ -219,7 +219,7 @@ contract CryptoSavesCheatsTest is Test {
         vm.expectRevert(
             CryptoSaves.AdditionalMonthsShouldBeMoreThanZero.selector
         );
-        cryptoSaves.extendLockup(0, 1);
+        cryptoSaves.extendLockTime(0, 1);
         vm.stopPrank();
     }
 
