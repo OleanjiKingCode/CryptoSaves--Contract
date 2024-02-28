@@ -34,7 +34,7 @@ forge script script/CryptoSaves.s.sol:CryptoSavesScript --rpc-url RPC_URL  --pri
    - Install necessary dependencies, including OpenZeppelin contracts.
 
 2. **Deploying the Contract:**
-   - Deploy the EtherLockup contract to a compatible Ethereum blockchain.
+   - Deploy the EtherLockup contract to a compatible Ethereum blockchain. I used polygonMumbai here
 
 3. **Usage:**
    - Use the provided external functions to lock, unlock, extend, and manage Ether lockups.
@@ -72,7 +72,7 @@ forge script script/CryptoSaves.s.sol:CryptoSavesScript --rpc-url RPC_URL  --pri
     - Updates the lockup to set the amount to zero and mark it as unlocked.
     - Emits an `EtherUnlocked` event.
 
-- `extendLockup(uint256 _additionalMonths, uint256 _lockId):` Extend the lockup period for a specific lockId.
+- `extendLockTime(uint256 _additionalMonths, uint256 _lockId):` Extend the lockup period for a specific lockId.
   - **Parameters:**
     - `_additionalMonths`: The additional number of months to extend the lockup period.
     - `_lockId`: The identifier of the lockup to be extended.
@@ -87,7 +87,7 @@ forge script script/CryptoSaves.s.sol:CryptoSavesScript --rpc-url RPC_URL  --pri
   - **Returns:**
     - An array of all lockup details (array of `Lockup` structs).
 
-- `getLockupDetails(uint256 _lockId):` Retrieve details of a specific lockup.
+- `getLockupDetailsById(uint256 _lockId):` Retrieve details of a specific lockup.
   - **Parameters:**
     - `_lockId`: The identifier of the lockup to get details for.
   - **Returns:**
